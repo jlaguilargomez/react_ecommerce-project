@@ -5,10 +5,12 @@ import ShopPage from './pages/shop/shop.component';
 import { Switch, Route } from 'react-router-dom';
 
 import './App.scss';
+import Header from './components/header/header.component';
 
 function App() {
   return (
     <div>
+      <Header></Header>
       <Switch>
         <Route exact path='/' component={HomePage}></Route>
         <Route path='/shop' component={ShopPage}></Route>
