@@ -9,17 +9,37 @@ import { Switch, Route } from 'react-router-dom';
 import './App.scss';
 import Header from './components/header/header.component';
 
-function App() {
-  return (
-    <div>
-      <Header></Header>
-      <Switch>
-        <Route exact path='/' component={HomePage}></Route>
-        <Route path='/shop' component={ShopPage}></Route>
-        <Route path='/signin' component={SignInSignUp}></Route>
-      </Switch>
-    </div>
-  );
+import {auth} from './firebase/firebase.utils'
+
+class App extends React.Component {
+  constructor() {
+    super();
+
+    this.state = {
+      currentUser: null,
+    }
+  }
+
+  componentDidMount() {
+    auth.onAuthStateChanged(user => {
+        this.setState({currentUser: user})
+        console.log('user', user);
+      }
+    );
+  }
+
+  render() {
+    return (
+      <div>
+        <Header></Header>
+        <Switch>
+          <Route exact path='/' component={HomePage}></Route>
+          <Route path='/shop' component={ShopPage}></Route>
+          <Route path='/signin' component={SignInSignUp}></Route>
+        </Switch>
+      </div>
+    );
+  } 
 }
 
 export default App;
