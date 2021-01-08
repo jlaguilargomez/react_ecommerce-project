@@ -484,3 +484,274 @@ unSubscribeFromAuth = null;
     this.unSubscribeFromAuth();
   }
 ```
+
+### Logout
+
+Vamos ahora a darle al usuario la posibilidad de hacer LOGOUT mediante el botón que crearemos en el menú superior.
+
+![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/672ae22f-ed00-4c63-acad-7ac41c28012f/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/672ae22f-ed00-4c63-acad-7ac41c28012f/Untitled.png)
+
+Para esto, el componente `Header` debe ser consciente de cuándo un usuario está autenticado o no.
+
+```jsx
+<Header currentUser={this.state.currentUser}></Header>
+```
+
+Pasamos el STATE que controla la autenticación, al HEADER, para que pueda servirse de él y mostrar un contenido u otro en función del mismo.
+
+![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/214d703b-41f3-400a-aa2c-37c2867df15e/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/214d703b-41f3-400a-aa2c-37c2867df15e/Untitled.png)
+
+**OJO, muy importante, a la hora de ejecutar una función con un evento HTML, ten en cuenta que no le puedes pasar la función directamente, necesitas ejecutar el CALLBACK:** `onClick = {() => auth.signOut()}`
+
+## Firebase Firestore
+
+Vamos a crear una base de datos para los archivos de nuestro proyecto.
+
+![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/1ecbf555-4f9e-4a32-87dd-cfbfc4066653/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/1ecbf555-4f9e-4a32-87dd-cfbfc4066653/Untitled.png)
+
+Una vez creada una BBDD en modo TEST, accedemos al menú de configuración.
+
+Crearemos una BBDD NoSQL, esto es, como un JSON a lo bestia.
+
+2 tipos de datos:
+
+- _Collections_
+- _Documents_
+
+Creamos una de ejemplo:
+
+![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/dfe313d3-4f4a-407c-9900-c5b6522b2808/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/dfe313d3-4f4a-407c-9900-c5b6522b2808/Untitled.png)
+
+Para poder acceder a los datos almacenados en la misma, lo haremos de la siguiente forma:
+
+![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/3335e367-1f72-4fb6-80be-8a7baa3002b4/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/3335e367-1f72-4fb6-80be-8a7baa3002b4/Untitled.png)
+
+## Storing user data in firebase
+
+Nos estamos autenticando con los usuarios a través de google, pero estos no se están registrando en nuestra BBDD. Tenemos que buscar una forma de gestionarlo, y lo haremos a través de FIRESTORE
+
+![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/afea6f45-338c-4eb0-9c64-87e17a7a671e/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/afea6f45-338c-4eb0-9c64-87e17a7a671e/Untitled.png)
+
+De todos los datos que nos devuelve el objeto de usuario al autenticarse, los que realmente puede que necesitemos son los campos como: _user, email, phone ...._ pero el más importante sin duda es el de `uid`, ya que es el identificador único de usuario (nos permitirá manejar permisos y personalizar contenido)
+
+![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/c74465d2-9ed1-4b76-a19c-c7806995d69f/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/c74465d2-9ed1-4b76-a19c-c7806995d69f/Untitled.png)
+
+Vamos a gestionar este "guardado" de usuarios desde la propia aplicación.
+
+Crearemos una función que nos permita recoger el objeto que devuelve la autenticación y guardar las propiedades que consideremos oportunas en la BBDD.
+
+### Firestore return
+
+![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/45b8361f-2e3b-4299-9627-7e07df0bb777/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/45b8361f-2e3b-4299-9627-7e07df0bb777/Untitled.png)
+
+![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/8926df44-99ce-4f28-ad38-50731a2c59c7/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/8926df44-99ce-4f28-ad38-50731a2c59c7/Untitled.png)
+
+![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/e26831e1-b79d-4715-882d-d2b9d30409d4/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/e26831e1-b79d-4715-882d-d2b9d30409d4/Untitled.png)
+
+Creamos la función encargada del almacenamiento de usuario entre las utilidades del archivo `firebase.utils.js`:
+
+```jsx
+export const createUserProfileDocument = async (userAuth, additionalData) => {
+  if (!userAuth) return;
+
+  const userRef = firestore.doc(`users/${userAuth.uid}`);
+  const snapShot = await userRef.get();
+
+  console.log(snapShot);
+
+  if (!snapShot.exists) {
+    const { displayName, email } = userAuth;
+    const createdAt = new Date();
+
+    // Si el usuario no existe, vamos a crearlo
+    try {
+      await userRef.set({
+        displayName,
+        email,
+        createdAt,
+        ...additionalData
+      });
+    } catch (error) {
+      console.log('error creating user', error.message);
+    }
+  } else {
+    console.log('user already exists');
+  }
+
+  return userRef;
+};
+```
+
+Y la ejecutamos al iniciar la aplicación en `App.js`, pasándole el usuario logueado:
+
+![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/63a2dd3d-0365-4df4-bacf-5485b0252751/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/63a2dd3d-0365-4df4-bacf-5485b0252751/Untitled.png)
+
+SI nos fijamos en la fución, estamos diciéndo que, si el usuario no existe, cree un nuevo valor en la dirección de memoria `users/{identificadorUsuario`
+
+Llevamos a cabo el flujo y verificamos en FIREBASE que el usuario ha sido creado:
+
+![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/9e0ec01a-8e5e-4af7-8a63-91ff3df22fe7/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/9e0ec01a-8e5e-4af7-8a63-91ff3df22fe7/Untitled.png)
+
+## Note: firestore update regarding permissions
+
+There has been a recent update in Firebase's database for new users where by default, there is a permission rule that disables reading from the database after 30 days! If this is not changed, some of you may start to see an error in your application saying `FirebaseError: Missing or insufficient permissions.`
+
+This can be quickly fixed by navigating to the rules tab in the database of your firestore console.
+
+![https://img-b.udemycdn.com/redactor/raw/2020-01-23_12-59-29-e7d47ff716daba6fa334cbe0f6fea0f5.png?secure=Htt8wmXBxz6hyt3wbzDusA%3D%3D%2C1610091997](https://img-b.udemycdn.com/redactor/raw/2020-01-23_12-59-29-e7d47ff716daba6fa334cbe0f6fea0f5.png?secure=Htt8wmXBxz6hyt3wbzDusA%3D%3D%2C1610091997)
+
+You will land on this page, which manages the permissions for your database. We will cover this section in greater depth later in the course.
+
+The text you can edit, and the part to focus on is line 4 and 5:
+
+![https://img-b.udemycdn.com/redactor/raw/2020-01-23_13-06-17-e3af9771c13c0032b3a61c64b85ea375.png?secure=YkuuLxT9Qwk-Ug7eGEdC3w%3D%3D%2C1610091997](https://img-b.udemycdn.com/redactor/raw/2020-01-23_13-06-17-e3af9771c13c0032b3a61c64b85ea375.png?secure=YkuuLxT9Qwk-Ug7eGEdC3w%3D%3D%2C1610091997)
+
+If you do not see `request.time < timestamp.date(year, month, day);` on line 5, you don't need to worry about this. If you do, just remove it, and replace the `: if` with a `;` on line 4.
+
+Your final result should look like:
+
+![https://img-b.udemycdn.com/redactor/raw/2020-01-23_13-07-01-6c96157500d57e0b3ea02df4027673a4.png?secure=QNM0Vlg9Qbl1Edc3hjdHqg%3D%3D%2C1610091997](https://img-b.udemycdn.com/redactor/raw/2020-01-23_13-07-01-6c96157500d57e0b3ea02df4027673a4.png?secure=QNM0Vlg9Qbl1Edc3hjdHqg%3D%3D%2C1610091997)
+
+With that you should be good to continue on!
+
+## Storing user data in our APP!!
+
+Hemos autenticado al usuario, lo hemos almacenado en la BBDD de FIREBASE y... ¡nos hemos cargado el estado del componente que era el que lo gestionaba hasta ahora!
+
+Tenemos pues que volver a hacer "consciente" a la aplicación de que el usuario se ha identificado correctamente.
+
+Obtenemos los datos del usuario autenticado, al iniciarse la aplicación en `App.js`
+
+```jsx
+componentDidMount() {
+    this.unSubscribeFromAuth = auth.onAuthStateChanged(async userAuth => {
+      if (userAuth) {
+        const userRef = await createUserProfileDocument(userAuth);
+
+        userRef.onSnapshot(snapShot => {
+          console.log('snapShot: ', snapShot.data());
+
+        })
+      }
+    });
+  }
+```
+
+Esto es lo que devuelve la consola:
+
+![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/32d3cff9-60c6-432b-850a-e6f4b4523e52/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/32d3cff9-60c6-432b-850a-e6f4b4523e52/Untitled.png)
+
+Sabiendo esto, vamos a almacenar los datos del documento dentro del estado del componente:
+
+![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/e4498971-6c66-45ae-9622-63fd61a7e348/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/e4498971-6c66-45ae-9622-63fd61a7e348/Untitled.png)
+
+## Sign up component
+
+Creamos el componente de registro, utilizando los componentes previos como `FormInput` y `CustomButton`
+
+![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/918e65d5-d782-4ed8-89d9-470fe384fd5a/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/918e65d5-d782-4ed8-89d9-470fe384fd5a/Untitled.png)
+
+Vuelvo a destacar el modo en el que "almacena" en el state los valores del formulario:
+
+```jsx
+handleChange = (event) => {
+  const { name, value } = event.target;
+
+  this.setState({ [name]: value });
+};
+```
+
+Para poder realizar el inicio de sesión con email y pass, tenemos que habilitarlo en el menú de configuración de FIREBASE:
+
+![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/7d1363d7-78a1-4c77-891e-225e32a0c900/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/7d1363d7-78a1-4c77-891e-225e32a0c900/Untitled.png)
+
+## Sign up- Sign in with email and pass
+
+Manejamos ambos eventos de forma asíncrona (`async-await`), y usamos el método `auth` de `firebase.utils.js`
+
+### Sign up
+
+En el registro, no sólo pasamos el registro sino que también guardamos al usuario en la BBDD
+
+```jsx
+handleSubmit = async (event) => {
+  event.preventDefault();
+
+  const { displayName, email, password, confirmPassword } = this.state;
+
+  if (password !== confirmPassword) {
+    alert('Password must be equal');
+    return;
+  }
+
+  try {
+    const { user } = await auth.createUserWithEmailAndPassword(email, password);
+
+    await createUserProfileDocument(user, { displayName });
+
+    this.setState({
+      displayName: '',
+      email: '',
+      password: '',
+      confirmPassword: ''
+    });
+  } catch (error) {
+    console.error(error);
+  }
+};
+```
+
+### Sign in
+
+```jsx
+handleSubmit = async (event) => {
+  event.preventDefault();
+
+  const { email, password } = this.state;
+
+  try {
+    await auth.signInWithEmailAndPassword(email, password);
+    this.setState({ email: '', password: '' });
+  } catch (error) {
+    console.log(error);
+  }
+};
+```
+
+## Note to Custon Button
+
+One quick note due to the frequency of this question popping up! If you see that your sign in with google button causes the email and password fields to trigger asking the user to fill these in, simply add the property `type="button"` to our google sign in button! The reason this happens is because any buttons inside of a form element will cause the form to treat the button as `type="submit"` by default. We don't want that for our google sign in button though, so just make sure to add `type="button"` to our google sign in CustomButton.
+
+Your code might look like:
+
+```html
+<CustomButton type="button" onClick="{signInWithGoogle}" isGoogleSignIn> Sign in with Google </CustomButton>
+```
+
+## Section review
+
+Recapitulemos.
+
+Cuando el usuario llega por primera vez a nuestra aplicación y se da de alta, sus datos son almacenados en la base de datos que tenemos configurada para tal fin en FIREBASE.
+
+Si el usuario ya está dado de alta y quiere acceder a la aplicación, este dispone de un LOGIN para ello, mediante el cual contactará con FIREBASE. Si el usuario existe, se almacenará el estado de este en un componente de estado de la aplicación
+
+---
+
+# Redux 1
+
+## Section overview
+
+![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/ad09324f-191f-411f-a5f1-6e83309cd2a8/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/ad09324f-191f-411f-a5f1-6e83309cd2a8/Untitled.png)
+
+Tengamos en cuenta algo que hemos mencionado antes, **REACT**, es una librería de UI, por lo que según la aplicación va creciendo, manejar el estado se vuelve cada vez más complejo.
+
+Usaremos **REDUX** para manejar los estados de una forma global y más sencilla (ya que es una librería creada explícitamente para este fin).
+
+Nos vamos a centrar principalmente en este concepto:
+
+![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/fbab052e-0f52-4c15-b3ec-785cd2107b96/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/fbab052e-0f52-4c15-b3ec-785cd2107b96/Untitled.png)
+
+## Redux introduction
+
+[https://indra.udemy.com/course/complete-react-developer-zero-to-mastery/learn/lecture/15160164#labs](https://indra.udemy.com/course/complete-react-developer-zero-to-mastery/learn/lecture/15160164#labs)
