@@ -34,7 +34,9 @@ class App extends React.Component {
               id: snapShot.id,
               ...snapShot.data()
             }
-          });          
+          });  
+          
+          console.log(this.state)
         })
       } else {
         // si no hay usuario, lo almacenaremos como NULL en el estado del componente
