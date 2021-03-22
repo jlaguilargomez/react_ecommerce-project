@@ -1,4 +1,8 @@
-# react_ecommerce-project
+# React Ecommerce project (React, Redux, Firebase, Hooks)
+
+# Deploy
+
+[GitHub Pages](https://jlaguilargomez.github.io/react_ecommerce-project/.)
 
 # Resources
 
