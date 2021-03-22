@@ -2,7 +2,7 @@
 
 # Deploy
 
-[GitHub Pages](https://jlaguilargomez.github.io/react_ecommerce-project/.)
+[GitHub Pages](https://jlaguilargomez.github.io/react_ecommerce-project)
 
 # Resources
 
