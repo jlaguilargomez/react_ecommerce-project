@@ -1,6 +1,8 @@
 import { connect } from 'react-redux';
 
 import { toggleCartDropdown } from '../../redux/cart/cart.actions';
+import { selectCartItemsCount } from '../../redux/cart/cart.selectors';
+
 import { ReactComponent as ShoppingIcon } from '../../assets/shopping-bag.svg';
 
 import './cart-icon.styles.scss';
@@ -19,8 +21,8 @@ const mapDispatchToProps = (dispatch) => ({
   toggleCartDropdown: () => dispatch(toggleCartDropdown())
 });
 
-const mapStateToProps = ({ cart: { cartItems } }) => ({
-  itemCount: cartItems.reduce((acc, cartItem) => (acc += cartItem.quantity), 0)
+const mapStateToProps = (state) => ({
+  itemCount: selectCartItemsCount(state)
 });
 
 // el primer parámetro, null, es el estado por defecto
