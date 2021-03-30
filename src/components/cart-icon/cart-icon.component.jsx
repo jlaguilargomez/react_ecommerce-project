@@ -1,4 +1,5 @@
 import { connect } from 'react-redux';
+import { createStructuredSelector } from 'reselect';
 
 import { toggleCartDropdown } from '../../redux/cart/cart.actions';
 import { selectCartItemsCount } from '../../redux/cart/cart.selectors';
@@ -21,8 +22,8 @@ const mapDispatchToProps = (dispatch) => ({
   toggleCartDropdown: () => dispatch(toggleCartDropdown())
 });
 
-const mapStateToProps = (state) => ({
-  itemCount: selectCartItemsCount(state)
+const mapStateToProps = createStructuredSelector({
+  itemCount: selectCartItemsCount
 });
 
 // el primer parámetro, null, es el estado por defecto
